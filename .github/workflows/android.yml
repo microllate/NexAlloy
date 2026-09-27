@@ -39,6 +39,8 @@ jobs:
       run: ./gradlew assembleDebug
 
     - name: Build Release
+      env:
+        NEXALLOY_CI_DEBUG_SIGNING: "true"
       run: ./gradlew assembleRelease
 
     - name: Upload a Debug Artifact
