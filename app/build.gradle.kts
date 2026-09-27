@@ -194,7 +194,7 @@ abstract class GenerateStringsTask @Inject constructor(
         val token = Regex("%(?!%)(?!\\d+\\$)([a-zA-Z])")
         var index = 1
         return token.replace(text) {
-            "%${index++}${it.groupValues[1]}"
+            "%${index++}\${it.groupValues[1]}"
         }
     }
 
