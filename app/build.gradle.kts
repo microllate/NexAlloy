@@ -46,6 +46,7 @@ android {
         )
     }
     val ksFile = rootProject.file("signing.properties")
+    val useCiDebugSigning = providers.environmentVariable("NEXALLOY_CI_DEBUG_SIGNING").orNull == "true"
     signingConfigs {
         if (ksFile.exists()) {
             create("release") {
@@ -68,7 +69,11 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
-            if (ksFile.exists()) {
+            if (useCiDebugSigning) {
+                // CI fallback: the configured release keystore secret is invalid.
+                // Keep the release build type/minification, but sign with the SDK debug key.
+                signingConfig = signingConfigs.getByName("debug")
+            } else if (ksFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
