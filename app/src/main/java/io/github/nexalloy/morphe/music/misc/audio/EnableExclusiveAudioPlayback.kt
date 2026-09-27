@@ -21,16 +21,23 @@ val EnableExclusiveAudioPlayback = patch(
     fingerprint.hookMethod {
         after { param ->
             val original = param.result as? Boolean
+            val method = param.method
             XposedBridge.log(
-                "NexAlloy: EnableExclusiveAudioPlayback matched " +
-                    "${param.method.declaringClass.name}.${param.method.name}, " +
-                    "original=${original}"
+                "NexAlloy: ExclusiveAudio matched " +
+                    "${method.declaringClass.name}.${method.name}" +
+                    " return=${method.returnType}" +
+                    " params=${method.parameterTypes.joinToString(",")}" +
+                    " original=${original}"
             )
+
             if (original == false) {
-                param.result = true
+                val trace = Throwable().stackTrace
+                    .take(8)
+                    .joinToString(" <- ") { "${it.className}.${it.methodName}:${it.lineNumber}" }
                 XposedBridge.log(
-                    "NexAlloy: EnableExclusiveAudioPlayback changed false -> true"
+                    "NexAlloy: ExclusiveAudio false-call trace: " + trace
                 )
+                param.result = true
             }
         }
     }
