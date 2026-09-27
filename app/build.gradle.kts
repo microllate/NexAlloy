@@ -188,9 +188,20 @@ abstract class GenerateStringsTask @Inject constructor(
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
+    private fun normalizeStringFormats(text: String): String {
+        // Android resource strings containing multiple unnumbered substitutions
+        // are rejected by aapt2. Preserve formatting by assigning positional indexes.
+        val token = Regex("%(?!%)(?!\\d+\\$)([a-zA-Z])")
+        var index = 1
+        return token.replace(text) {
+            "%${index++}${it.groupValues[1]}"
+        }
+    }
+
     private fun writeNode(builder: MarkupBuilder, node: Any?) {
         if (node !is NodeChild) return
-        val attributes = node.attributes()
+        val attributes = node.attributes().toMutableMap()
+        val text = if (node.name() == "string") normalizeStringFormats(node.text()) else node.text()
         builder.withGroovyBuilder {
             if (node.children().any()) {
                 node.name()(attributes) {
@@ -199,7 +210,7 @@ abstract class GenerateStringsTask @Inject constructor(
                     }
                 }
             } else {
-                node.name()(attributes, node.text())
+                node.name()(attributes, text)
             }
         }
     }
