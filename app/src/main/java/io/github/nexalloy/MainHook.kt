@@ -27,11 +27,18 @@ class MainHook : XposedModule() {
 
     override fun onModuleLoaded(param: XposedModuleInterface.ModuleLoadedParam) {
         modulePath = moduleApplicationInfo.sourceDir
+        XposedBridge.log("NexAlloy: module loaded, path=" + modulePath)
     }
 
     override fun onPackageReady(param: PackageReadyParam) {
+        XposedBridge.log(
+            "NexAlloy: package ready " + param.packageName + ", first=" + param.isFirstPackage
+        )
         if (!param.isFirstPackage) return
-        if (!shouldHook(param.packageName)) return
+        if (!shouldHook(param.packageName)) {
+            XposedBridge.log("NexAlloy: package not in hook map: " + param.packageName)
+            return
+        }
         this.param = param
 
         inContext(param) { app ->
@@ -49,8 +56,22 @@ class MainHook : XposedModule() {
                 }
             }
 
-            val patches = patchesByPackage[param.packageName] ?: return@inContext
-            PatchExecutor(app, param, this).applyPatches(patches)
+            val patches = patchesByPackage[param.packageName]
+            if (patches == null) {
+                XposedBridge.log("NexAlloy: no patches for " + param.packageName)
+                return@inContext
+            }
+            XposedBridge.log(
+                "NexAlloy: applying " + patches.size + " patches to " + param.packageName
+            )
+            runCatching {
+                PatchExecutor(app, param, this).applyPatches(patches)
+            }.onFailure {
+                XposedBridge.log("NexAlloy: PatchExecutor failed for " + param.packageName)
+                XposedBridge.log(it)
+            }.onSuccess {
+                XposedBridge.log("NexAlloy: patch execution finished for " + param.packageName)
+            }
         }
     }
 
